@@ -122,11 +122,30 @@ Returns array of matched callback objects.
 ### .listenTo(other, event, callback)
 
     Lisn.listenTo = (other, event, callback) ->
+      @_listeners ?= {}
+      @_listeners[other] ?= {}
+      @_listeners[other][event] ?= []
+      @_listeners[other][event].push { event, callback }
       other.on(event, callback, @)
 
 ### .stopListening([other], [event], [callback])
 
     Lisn.stopListening = (other, event, callback) ->
+      return unless @_listeners
+
+      if other
+        if event
+          if callback
+            other.off(event, callback, @)
+          else
+            for callback in @_listeners[other][event]
+              @stopListening(other, event, callback)
+        else
+          for event, callbacks of @_listeners[other]
+            @stopListening(other, event)
+      else
+        for other, events of @_listeners
+          @stopListening(other)
 
 ### .listenToOnce(other, event, callback)
 
