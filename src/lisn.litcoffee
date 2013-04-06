@@ -121,7 +121,14 @@ Returns array of matched callback objects.
 
 ### .listenTo(other, event, callback)
 
+    Lisn.listenTo = (other, event, callback) ->
+      other.on(event, callback, @)
+
 ### .stopListening([other], [event], [callback])
+
+    Lisn.stopListening = (other, event, callback) ->
+
+### .listenToOnce(other, event, callback)
 
 Export Lisn to global scope:
 
