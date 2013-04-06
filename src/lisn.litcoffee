@@ -48,15 +48,21 @@ Try to guess what is result of this snippet? Yes, right. In your door will knock
 
     Lisn = {}
 
+### .eventSplitter
+
+RegExp for split events.
+
+    Lisn.eventSplitter = /\s/
+
 ### .on(event, callback, [context])
 
 Alias: `bind`.
 
     Lisn.on = (events, callback, context) ->
       @_events ?= {}
-      for event in events.split(/\s/)
-        @_events[event] ?= []
-        @_events[event].push { callback, context }
+
+      for event in events.split(@eventSplitter)
+        (@_events[event] ?= []).push { callback, context }
 
     Lisn.bind = Lisn.on
 
@@ -64,22 +70,28 @@ Alias: `bind`.
 
 Alias: `unbind`.
 
+Returns true if callback obj is match to passed callback and context.
+
+    callbackIsMatch = (obj, callback, context) ->
+      ( callback is undefined or
+        (obj.callback._fn and obj.callback._fn is callback) or
+        obj.callback is callback
+      ) and
+      (context is undefined or obj.context is context)
+
+Returns array of matched callback objects.
+
+    matchedCallbacks = (callbacks, callback, context) ->
+      for obj in callbacks
+        obj if callbackIsMatch(obj, callback, context)
+
     Lisn.off = (events, callback, context) ->
-      for event in events.split(/\s/g)
+      for event in events.split(@eventSplitter)
         callbacks = @_events[event]
-        objs  = for obj in callbacks
-                  callbackIsMatch = callback is undefined or
-                                    (obj.callback._fn and obj.callback._fn is callback) or
-                                    obj.callback is callback
 
-                  if callbackIsMatch and (context is undefined or obj.context is context)
-                    obj
-                  else
-                    undefined
-
-        for obj in objs
-          index = callbacks.indexOf(obj)
-          callbacks.splice(index, 1) if index isnt -1
+        for obj in matchedCallbacks(callbacks, callback, context)
+          if (index = callbacks.indexOf(obj)) isnt -1
+            callbacks.splice(index, 1)
 
     Lisn.unbind = Lisn.off
 
@@ -92,14 +104,9 @@ Alias: `unbind`.
 
       for eventName in [event, 'all']
         if callbacks = @_events[eventName]
-          for callbackObj in callbacks
-            objs.push callbackObj
+          objs.push(callbackObj) for callbackObj in callbacks
 
-      for obj in objs
-        if obj.context
-          obj.callback.apply(obj.context, args)
-        else
-          obj.callback(args...)
+      obj.callback.apply(obj.context, args) for obj in objs
 
 ### .once(event, callback, [context])
 
