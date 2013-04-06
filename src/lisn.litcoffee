@@ -55,10 +55,8 @@ Alias: `bind`.
     Lisn.on = (events, callback, context) ->
       @_events ?= {}
       for event in events.split(/\s/)
-        @_events[event] = if context
-                            (args...) -> callback.apply(context, args)
-                          else
-                            callback
+        @_events[event] ?= []
+        @_events[event].push { callback, context }
 
     Lisn.bind = Lisn.on
 
@@ -66,17 +64,53 @@ Alias: `bind`.
 
 Alias: `unbind`.
 
+    Lisn.off = (events, callback, context) ->
+      for event in events.split(/\s/g)
+        callbacks = @_events[event]
+        objs  = for obj in callbacks
+                  callbackIsMatch = callback is undefined or
+                                    (obj.callback._fn and obj.callback._fn is callback) or
+                                    obj.callback is callback
+
+                  if callbackIsMatch and (context is undefined or obj.context is context)
+                    obj
+                  else
+                    undefined
+
+        for obj in objs
+          index = callbacks.indexOf(obj)
+          callbacks.splice(index, 1) if index isnt -1
+
+    Lisn.unbind = Lisn.off
+
 ### .trigger(event, [*args])
 
     Lisn.trigger = (event, args...) ->
       return unless @_events
 
-      @_events[event]?(args...)
-      @_events['all']?(args...)
+      objs = []
+
+      for eventName in [event, 'all']
+        if callbacks = @_events[eventName]
+          for callbackObj in callbacks
+            objs.push callbackObj
+
+      for obj in objs
+        if obj.context
+          obj.callback.apply(obj.context, args)
+        else
+          obj.callback(args...)
 
 ### .once(event, callback, [context])
 
-    Lisn.once = ->
+    Lisn.once = (events, callback, context) ->
+      self = @
+      onceCallback = ->
+        self.off(events, onceCallback)
+        callback.apply(@, arguments)
+
+      onceCallback._fn = callback
+      @on(events, onceCallback, context)
 
 ### .listenTo(other, event, callback)
 
