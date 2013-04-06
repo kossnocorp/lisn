@@ -1,0 +1,25 @@
+{
+  "name": "lisn",
+  "version": "0.1.0",
+  "author": "Sasha Koss <kossnocorp@gmail.com>",
+  "description": "Zero-dependency Backbone.js Events implementation",
+
+  "devDependencies": {
+    "coffee-script": "",
+    "mocha":         "",
+    "chai":          "",
+    "sinon":         "",
+    "sinon-chai":    "",
+    "uglify-js":     ""
+  },
+
+  "license": "MIT",
+
+  "engine": {
+    "node": ">=0.4"
+  },
+
+  "scripts": {
+    "test": "./node_modules/mocha/bin/mocha ./spec/*_spec.coffee --compilers coffee:coffee-script -R spec -c"
+  }
+}
