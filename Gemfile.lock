@@ -17,6 +17,7 @@ GEM
       coderay (~> 1.0.5)
       method_source (~> 0.8)
       slop (~> 3.4)
+    rake (10.0.3)
     slop (3.4.4)
     terminal-table (1.4.5)
     thor (0.18.0)
@@ -26,3 +27,4 @@ PLATFORMS
 
 DEPENDENCIES
   guard-shell
+  rake
