@@ -6,7 +6,7 @@ namespace :js do
       './node_modules/coffee-script/bin/coffee',
       '--compile',
       '--output ./lib',
-      './src/*.coffee'
+      './src/*.litcoffee'
     ]
     system command.join(' ')
   end
