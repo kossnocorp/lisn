@@ -22,7 +22,7 @@ See [milestones](https://github.com/kossnocorp/lisn/issues/milestones).
 
 This project uses [Semantic Versioning](http://semver.org/) for release numbering.
 
-### v0.1.0 (unreleased)
+### v0.1.0 (8 Apr, 2013)
 
 First, initial release.
 
