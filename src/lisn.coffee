@@ -11,45 +11,33 @@ matchedCallbacks = (callbacks, callback, context) ->
 
 listenersCount = 0
 
-# Returns uniq id. Backbone.js do the same thing, but uses "l" as prefix.
-# Lisn.js uses "__l" to prevent conficts.
-getUniqId = ->
-  "__l#{listenersCount++}"
-
 Lisn =
 
-  eventsMap: {}
+  on: (events, callback, context) ->
+    for event in @splittedEvents(events)
+      @addCallback(event, callback, context)
 
-  callbacksFor: (event) ->
-    @eventsMap[event] ||= []
+  off: (events, callback, context) ->
+    for event in @splittedEvents(events)
+      eventCallbacks = @callbacksFor(event)
 
-  addCallbackTo: (event, callback, context) ->
-    @callbacksFor(event).push {callback, context}
+      for obj in matchedCallbacks(eventCallbacks, callback, context)
+        index = eventCallbacks.indexOf(obj)
+        callbackExists = index isnt -1
+        eventCallbacks.splice(index, 1) if callbackExists
 
-  splittedEvents: (eventsStr) ->
-    eventsStr.split(@eventSplitter)
-
-  on: (eventsStr, callback, context) ->
-    for event in @splittedEvents(eventsStr)
-      @addCallbackTo(event, callback, context)
-
-  off: (eventsStr, callback, context) ->
-    if eventsStr?
-      for event in @splittedEvents(eventsStr)
-        eventCallbacks = @callbacksFor(event)
-
-        for obj in matchedCallbacks(eventCallbacks, callback, context)
-          if (index = eventCallbacks.indexOf(obj)) isnt -1
-            eventCallbacks.splice(index, 1)
-
-  trigger: (eventStr, args...) ->
+  trigger: (events, args...) ->
     objs = []
 
-    for event in [eventStr, 'all']
+    for event in @splittedEvents(events)
       if callbacks = @callbacksFor(event)
-        objs.push(callbackObj) for callbackObj in callbacks
+        for obj in callbacks
+          objs.push(obj)
 
-    obj.callback.apply(obj.context, args) for obj in objs
+    for obj in objs
+      obj.callback.apply(obj.context, args)
+
+    @triggerAllEvent(args)
 
   once: (events, callback, context) ->
     self = @
@@ -60,23 +48,24 @@ Lisn =
     onceCallback._fn = callback
     @on(events, onceCallback, context)
 
-  listenTo: (other, event, callback) ->
-    @_listeners ?= []
+  callbacksFor: (event) ->
+    @eventsMap ?= {}
+    @eventsMap[event] ||= []
 
-    listenerId = other._listenerId || (other._listenerId = getUniqId())
+  addCallback: (event, callback, context) ->
+    @callbacksFor(event).push {callback, context}
 
-    @_listeners[listenerId] = other
-    other.on(event, callback, @)
+  removeCallback: ->
 
-  stopListening: (obj, event, callback) ->
-    return unless @_listeners
-    listeners = if obj
-                  [obj]
-                else
-                  listener for id, listener of @_listeners
+  triggerAllEvent: (args) ->
+    @triggerCallbacks(@callbacksFor('all'), args)
 
-    for listener in listeners
-      listener.off(event, callback, @)
+  triggerCallbacks: (callbacks, args) ->
+    for callback in callbacks
+      callback.callback.apply(callback.context, args)
+
+  splittedEvents: (events) ->
+    events?.split(@eventSplitter) || []
 
 Lisn.bind = Lisn.on
 Lisn.unbind = Lisn.off
