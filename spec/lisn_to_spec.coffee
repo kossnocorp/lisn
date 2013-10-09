@@ -50,44 +50,55 @@ describe 'LisnTo', ->
       objC.trigger('test')
       @spy.should.not.be.called
 
-    #it 'unbinds only callbacks registread via listenTo', ->
-      #objC = newObj()
-      #spyB = sinon.spy()
-      #@obj.listenTo(@objB, 'test', @spy)
-      #@obj.listenTo(objC,  'test', @spy)
-      #@objB.on('test', spyB)
-      #@obj.stopListening()
-      #@objB.trigger('test')
-      #objC.trigger('test')
-      #@spy.should.not.be.called
-      #spyB.should.not.be.calledOnce
+    it 'unbinds only callbacks registread via listenTo and listenToOnce', ->
+      objC = newObj()
+      spyB = sinon.spy()
+      @obj.listenTo(@objB, 'test', @spy)
+      @obj.listenToOnce(objC, 'test', @spy)
+      @objB.on('test', spyB)
+      @obj.stopListening()
+      @objB.trigger('test')
+      objC.trigger('test')
+      @spy.should.not.be.called
+      spyB.should.be.calledOnce
 
-    #it 'unbinds callbacks binded to passed object events', ->
-      #@obj.listenTo(@objB, 'test',  @spy)
-      #@obj.listenTo(@objB, 'test2', @spy)
-      #@obj.stopListening(@objB)
-      #@objB.trigger('test')
-      #@objB.trigger('test2')
-      #@spy.should.not.be.called
+    it 'unbinds callbacks binded to passed object events', ->
+      @obj.listenTo(@objB, 'test',  @spy)
+      @obj.listenTo(@objB, 'test2', @spy)
+      @obj.stopListening(@objB)
+      @objB.trigger('test')
+      @objB.trigger('test2')
+      @spy.should.not.be.called
 
-    #it 'unbinds passed event from specified object', ->
-      #spyB = sinon.spy()
-      #@obj.listenTo(@objB, 'test',  @spy)
-      #@obj.listenTo(@objB, 'test2', spyB)
-      #@obj.stopListening(@objB, 'test')
-      #@objB.trigger('test')
-      #@objB.trigger('test2')
-      #@spy.should.not.be.called
-      #spyB.should.be.calledOnce
+    it 'unbinds passed event from specified object', ->
+      spyB = sinon.spy()
+      @obj.listenTo(@objB, 'test',  @spy)
+      @obj.listenTo(@objB, 'test2', spyB)
+      @obj.stopListening(@objB, 'test')
+      @objB.trigger('test')
+      @objB.trigger('test2')
+      @spy.should.not.be.called
+      spyB.should.be.calledOnce
 
-    #it 'unbinds specific callback from passed object event', ->
-      #spyB = sinon.spy()
-      #@obj.listenTo(@objB, 'test', @spy)
-      #@obj.listenTo(@objB, 'test', spyB)
-      #@obj.stopListening(@objB, 'test', @spy)
-      #@objB.trigger('test')
-      #@spy.should.not.be.called
-      #spyB.should.be.calledOnce
+    it 'unbinds specific callback from passed object event', ->
+      spyB = sinon.spy()
+      @obj.listenTo(@objB, 'test', @spy)
+      @obj.listenTo(@objB, 'test', spyB)
+      @obj.stopListening(@objB, 'test', @spy)
+      @objB.trigger('test')
+      @spy.should.not.be.called
+      spyB.should.be.calledOnce
 
   describe '.listenToOnce(other, event, callback)', ->
+
+    it 'binds callback to passed object event', ->
+      @obj.listenToOnce(@objB, 'test', @spy)
+      @objB.trigger('test')
+      @spy.should.be.calledOnce
+
+    it 'unbinds after first call', ->
+      @obj.listenToOnce(@objB, 'test', @spy)
+      @objB.trigger('test')
+      @objB.trigger('test')
+      @spy.should.be.calledOnce
 
