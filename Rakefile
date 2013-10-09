@@ -1,3 +1,10 @@
+namespace :release do
+
+  task :npm do
+    system 'npm publish'
+  end
+end
+
 namespace :js do
 
   desc 'Build JavaScript from CoffeeScript source code'
