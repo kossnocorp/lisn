@@ -1,71 +1,91 @@
-callbackIsMatch = (obj, callback, context) ->
-  ( callback is undefined or
-    (obj.callback._fn and obj.callback._fn is callback) or
-    obj.callback is callback
-  ) and
-  (context is undefined or obj.context is context)
-
-matchedCallbacks = (callbacks, callback, context) ->
-  for obj in callbacks
-    obj if callbackIsMatch(obj, callback, context)
-
-listenersCount = 0
+EVENTS_SPLITTER = /\s/
 
 Lisn =
 
-  on: (events, callback, context) ->
-    for event in @splittedEvents(events)
-      @addCallback(event, callback, context)
+  on: (events, fn, context) ->
+    for event in @_splittedEvents(events)
+      @_addCallback(event, fn, context)
 
-  off: (events, callback, context) ->
-    for event in @splittedEvents(events)
-      eventCallbacks = @callbacksFor(event)
+  once: (events, fn, context) ->
+    self = @
+    onceCallback = ->
+      self.off(events, onceCallback)
+      fn.apply(@, arguments)
 
-      for obj in matchedCallbacks(eventCallbacks, callback, context)
-        index = eventCallbacks.indexOf(obj)
-        callbackExists = index isnt -1
-        eventCallbacks.splice(index, 1) if callbackExists
+    onceCallback.__originFn = fn
+    @on(events, onceCallback, context)
+
+  off: (events, fn, context) ->
+    if events?
+      for event in @_splittedEvents(events)
+        @_removeCallback(event, fn, context)
+    else
+      @_removeCallbacksFromContext(context)
 
   trigger: (events, args...) ->
     objs = []
 
-    for event in @splittedEvents(events)
-      if callbacks = @callbacksFor(event)
+    for event in @_splittedEvents(events)
+      if callbacks = @_callbacksFor(event)
         for obj in callbacks
           objs.push(obj)
 
-    for obj in objs
-      obj.callback.apply(obj.context, args)
+    @_triggerCallbacks(objs, args)
+    @_triggerAllEvents(args)
 
-    @triggerAllEvent(args)
+  _addCallback: (event, fn, context) ->
+    callbacks = @_callbacksFor(event)
+    callbacks.push(@_buildCallback(fn, context))
 
-  once: (events, callback, context) ->
-    self = @
-    onceCallback = ->
-      self.off(events, onceCallback)
-      callback.apply(@, arguments)
+  _removeCallback: (event, fn, context) ->
+    callbacks = @_callbacksFor(event)
 
-    onceCallback._fn = callback
-    @on(events, onceCallback, context)
+    for callback in @_filterCallbacks(callbacks, fn, context)
+      @_removeCallbackFrom(callbacks, callback)
 
-  callbacksFor: (event) ->
-    @eventsMap ?= {}
-    @eventsMap[event] ||= []
+  _removeCallbacksFromContext: (context) ->
+    for event, callbacks of @_events()
+      for callback in @_filterCallbacks(callbacks, undefined, context)
+        @_removeCallbackFrom(callbacks, callback)
 
-  addCallback: (event, callback, context) ->
-    @callbacksFor(event).push {callback, context}
+  _removeCallbackFrom: (callbacks, callback) ->
+    index = callbacks.indexOf(callback)
+    callbackExists = index isnt -1
+    callbacks.splice(index, 1) if callbackExists
 
-  removeCallback: ->
+  _triggerAllEvents: (args) ->
+    @_triggerCallbacks(@_callbacksFor('all'), args)
 
-  triggerAllEvent: (args) ->
-    @triggerCallbacks(@callbacksFor('all'), args)
-
-  triggerCallbacks: (callbacks, args) ->
+  _triggerCallbacks: (callbacks, args) ->
     for callback in callbacks
-      callback.callback.apply(callback.context, args)
+      callback.fn.apply(callback.context, args)
 
-  splittedEvents: (events) ->
-    events?.split(@eventSplitter) || []
+  _callbacksFor: (event) ->
+    events = @_events()
+    events[event] ||= []
+
+  _events: ->
+    @__events ||= {}
+
+  _filterCallbacks: (callbacks, fn, context) ->
+    for callback in callbacks
+      callback if @_callbackIsMatch(callback, fn, context)
+
+  _callbackIsMatch: (callback, fn, context) ->
+    fnEqualsOrigin = callback.fn.__originFn and callback.fn.__originFn is fn
+    fnEquals = fnEqualsOrigin or callback.fn is fn
+    fnFits = not fn? or fnEquals
+
+    contextEquals = callback.context is context
+    contextFits = not context? or contextEquals
+
+    fnFits and contextFits
+
+  _buildCallback: (fn, context) ->
+    {fn, context}
+
+  _splittedEvents: (events) ->
+    events?.split(EVENTS_SPLITTER) || []
 
 Lisn.bind = Lisn.on
 Lisn.unbind = Lisn.off
